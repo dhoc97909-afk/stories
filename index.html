@@ -350,13 +350,16 @@ function parseStories(raw) {
     .map(l => l.trim())
     .filter(l => l.length > 0 && !l.startsWith('#'))
     .map((line, i) => {
-      const imgMatch   = line.match(/^תמונה\s*:\s*(.+)$/i)
-                      || line.match(/^image\s*:\s*(.+)$/i);
-      const vidMatch   = line.match(/^וידאו\s*:\s*(.+)$/i)
-                      || line.match(/^video\s*:\s*(.+)$/i);
-      if (imgMatch)  return { type: 'image',  url: imgMatch[1].trim(),  bg: i % 6 };
-      if (vidMatch)  return { type: 'video',  url: vidMatch[1].trim(),  bg: i % 6 };
-      return           { type: 'text',   text: line,              bg: i % 6 };
+      const colonIdx = line.indexOf(':');
+      if (colonIdx > 0) {
+        const prefix = line.substring(0, colonIdx).trim();
+        const value  = line.substring(colonIdx + 1).trim();
+        if (prefix === '\u05EA\u05DE\u05D5\u05E0\u05D4' || prefix.toLowerCase() === 'image')
+          return { type: 'image', url: value, bg: i % 6 };
+        if (prefix === '\u05D5\u05D9\u05D3\u05D0\u05D5' || prefix.toLowerCase() === 'video')
+          return { type: 'video', url: value, bg: i % 6 };
+      }
+      return { type: 'text', text: line, bg: i % 6 };
     });
 }
 
