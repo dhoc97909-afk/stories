@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>סטורי</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bar-height: 3px;
+    --bar-gap: 5px;
+    --transition: 0.25s ease;
+    --accent: #fff;
+  }
+
+  body {
+    font-family: 'Rubik', sans-serif;
+    background: #000;
+    width: 100vw;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+  }
+
+  /* ── Story Container ── */
+  #story-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 430px;
+    height: 100dvh;
+    background: #111;
+    overflow: hidden;
+    border-left: 1px solid #222;
+    border-right: 1px solid #222;
+  }
+
+  /* ── Media layers ── */
+  #story-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111;
+    transition: background 0.3s;
+  }
+
+  #story-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: none;
+  }
+
+  #story-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: none;
+  }
+
+  /* ── Text story ── */
+  #story-text-wrap {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 30px;
+  }
+
+  #story-text {
+    color: #fff;
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.5;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    direction: auto;
+  }
+
+  /* ── Gradient overlays ── */
+  .grad-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 200px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .grad-bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 160px;
+    background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* ── Progress bars ── */
+  #progress-bars {
+    position: absolute;
+    top: 14px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    gap: var(--bar-gap);
+    z-index: 20;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: var(--bar-height);
+    background: rgba(255,255,255,0.35);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: #fff;
+    border-radius: 2px;
+    width: 0%;
+    transition: none;
+  }
+
+  .bar-fill.done  { width: 100%; }
+  .bar-fill.active { animation: fillBar var(--story-duration, 5s) linear forwards; }
+
+  @keyframes fillBar {
+    from { width: 0% }
+    to   { width: 100% }
+  }
+
+  /* ── Header ── */
+  #story-header {
+    position: absolute;
+    top: 28px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 20;
+    padding-top: 8px;
+  }
+
+  #story-counter {
+    color: rgba(255,255,255,0.85);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+
+  #live-badge {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.8px;
+  }
+
+  #live-badge.visible { display: flex; }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #ff3b3b;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  /* ── Tap zones ── */
+  .tap-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 35%;
+    z-index: 30;
+    cursor: pointer;
+  }
+  #tap-left  { left: 0; }
+  #tap-right { right: 0; }
+
+  /* ── Arrow buttons (desktop) ── */
+  .arrow-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 40;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background var(--transition), transform 0.15s;
+    font-size: 18px;
+    user-select: none;
+  }
+  .arrow-btn:hover { background: rgba(255,255,255,0.22); }
+  .arrow-btn:active { transform: translateY(-50%) scale(0.92); }
+  #btn-prev { right: calc(100% + 14px); }
+  #btn-next { left: calc(100% + 14px); }
+
+  @media (max-width: 600px) {
+    .arrow-btn { display: none; }
+  }
+
+  /* ── Empty/Loading state ── */
+  #empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: rgba(255,255,255,0.4);
+    font-size: 15px;
+    z-index: 5;
+  }
+
+  .spinner {
+    width: 34px; height: 34px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: rgba(255,255,255,0.5);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Slide transition ── */
+  #story-wrap.slide-left  { animation: slideL 0.22s ease; }
+  #story-wrap.slide-right { animation: slideR 0.22s ease; }
+
+  @keyframes slideL {
+    from { opacity: 1; transform: translateX(0); }
+    50%  { opacity: 0.3; transform: translateX(-12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideR {
+    from { opacity: 1; transform: translateX(0); }
+    50%  { opacity: 0.3; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Text bg colors cycle */
+  .bg-0 { background: linear-gradient(135deg, #1a1a2e, #16213e); }
+  .bg-1 { background: linear-gradient(135deg, #0f3460, #533483); }
+  .bg-2 { background: linear-gradient(135deg, #2d1b69, #11998e); }
+  .bg-3 { background: linear-gradient(135deg, #141e30, #243b55); }
+  .bg-4 { background: linear-gradient(135deg, #200122, #6f0000); }
+  .bg-5 { background: linear-gradient(135deg, #0f2027, #2c5364); }
+</style>
+</head>
+<body>
+
+<div style="position:relative;">
+  <!-- Outer arrows -->
+  <button class="arrow-btn" id="btn-prev" onclick="navigate(-1)">&#8250;</button>
+  <button class="arrow-btn" id="btn-next" onclick="navigate(1)">&#8249;</button>
+
+  <div id="story-wrap">
+    <!-- Progress bars -->
+    <div id="progress-bars"></div>
+
+    <!-- Header -->
+    <div id="story-header">
+      <span id="story-counter"></span>
+      <span id="live-badge"><span class="live-dot"></span>LIVE</span>
+    </div>
+
+    <!-- Gradients -->
+    <div class="grad-top"></div>
+    <div class="grad-bottom"></div>
+
+    <!-- Story background / media -->
+    <div id="story-bg">
+      <img id="story-img" alt="story" />
+      <video id="story-video" playsinline muted autoplay loop></video>
+      <div id="story-text-wrap">
+        <p id="story-text"></p>
+      </div>
+    </div>
+
+    <!-- Empty/loading -->
+    <div id="empty-state">
+      <div class="spinner"></div>
+      <span>טוען סטורי...</span>
+    </div>
+
+    <!-- Tap zones -->
+    <div class="tap-zone" id="tap-left"  onclick="navigate(-1)"></div>
+    <div class="tap-zone" id="tap-right" onclick="navigate(1)"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  ⚙️  CONFIG — שנה כאן
+// ═══════════════════════════════════════════════════
+const STORIES_URL      = 'https://YOUR_USERNAME.pythonanywhere.com/stories.txt'; // ← שנה לכתובת שלך
+const REFRESH_INTERVAL = 10;   // שניות בין בדיקות עדכון
+const STORY_DURATION   = 7;    // שניות לכל סטורי טקסט
+// ═══════════════════════════════════════════════════
+
+let stories   = [];
+let current   = 0;
+let timer     = null;
+let lastRaw   = '';
+let isLive    = false;
+
+const wrap      = document.getElementById('story-wrap');
+const barsEl    = document.getElementById('progress-bars');
+const counterEl = document.getElementById('story-counter');
+const liveBadge = document.getElementById('live-badge');
+const emptyEl   = document.getElementById('empty-state');
+const bgEl      = document.getElementById('story-bg');
+const imgEl     = document.getElementById('story-img');
+const videoEl   = document.getElementById('story-video');
+const textWrap  = document.getElementById('story-text-wrap');
+const textEl    = document.getElementById('story-text');
+
+// ── Parse stories.txt ──────────────────────────────
+function parseStories(raw) {
+  return raw.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0 && !l.startsWith('#'))
+    .map((line, i) => {
+      const imgMatch   = line.match(/^תמונה\s*:\s*(.+)$/i)
+                      || line.match(/^image\s*:\s*(.+)$/i);
+      const vidMatch   = line.match(/^וידאו\s*:\s*(.+)$/i)
+                      || line.match(/^video\s*:\s*(.+)$/i);
+      if (imgMatch)  return { type: 'image',  url: imgMatch[1].trim(),  bg: i % 6 };
+      if (vidMatch)  return { type: 'video',  url: vidMatch[1].trim(),  bg: i % 6 };
+      return           { type: 'text',   text: line,              bg: i % 6 };
+    });
+}
+
+// ── Fetch & reload if changed ───────────────────────
+async function fetchStories() {
+  try {
+    const res = await fetch(STORIES_URL + '?t=' + Date.now(), {
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error(res.status);
+    const raw = await res.text();
+    if (raw === lastRaw) return; // no change
+    lastRaw = raw;
+
+    const prev   = stories.length;
+    stories      = parseStories(raw);
+    isLive       = true;
+
+    if (stories.length === 0) { showEmpty('אין סטורי עדיין'); return; }
+    emptyEl.style.display = 'none';
+
+    // If new stories added and we were at last, jump to new last
+    if (prev > 0 && current >= prev && stories.length > prev) {
+      current = stories.length - 1;
+    }
+    if (current >= stories.length) current = stories.length - 1;
+
+    buildBars();
+    showStory(current, false);
+    liveBadge.classList.add('visible');
+  } catch (e) {
+    if (stories.length === 0) showEmpty('לא ניתן לטעון סטורי');
+    console.warn('Fetch error:', e);
+  }
+}
+
+function showEmpty(msg) {
+  emptyEl.querySelector('span').textContent = msg;
+  emptyEl.querySelector('.spinner').style.display = msg === 'אין סטורי עדיין' ? 'none' : '';
+  emptyEl.style.display = 'flex';
+}
+
+// ── Build progress bars ─────────────────────────────
+function buildBars() {
+  barsEl.innerHTML = '';
+  stories.forEach((_, i) => {
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'bar-fill';
+    fill.id = 'bar-' + i;
+    track.appendChild(fill);
+    barsEl.appendChild(track);
+  });
+}
+
+// ── Show a story ────────────────────────────────────
+function showStory(idx, animate = true) {
+  if (!stories.length) return;
+  clearTimeout(timer);
+
+  current = Math.max(0, Math.min(idx, stories.length - 1));
+  const s = stories[current];
+
+  // update bars
+  document.querySelectorAll('.bar-fill').forEach((b, i) => {
+    b.className = 'bar-fill';
+    b.style.animation = 'none';
+    void b.offsetWidth; // reflow
+    if (i < current)       b.classList.add('done');
+    else if (i === current) {
+      const dur = s.type === 'video' ? getVideoDur() : STORY_DURATION;
+      b.style.setProperty('--story-duration', dur + 's');
+      b.classList.add('active');
+    }
+  });
+
+  // counter
+  counterEl.textContent = `${current + 1} / ${stories.length}`;
+
+  // reset media
+  imgEl.style.display   = 'none';
+  videoEl.style.display = 'none';
+  textWrap.style.display = 'none';
+  bgEl.className         = '';
+
+  if (s.type === 'image') {
+    imgEl.src           = s.url;
+    imgEl.style.display = 'block';
+    bgEl.style.background = '#000';
+    timer = setTimeout(() => navigate(1), STORY_DURATION * 1000);
+
+  } else if (s.type === 'video') {
+    videoEl.src           = s.url;
+    videoEl.style.display = 'block';
+    bgEl.style.background = '#000';
+    videoEl.load();
+    videoEl.play().catch(() => {});
+    // advance when video ends (or fallback)
+    videoEl.onended = () => navigate(1);
+    timer = setTimeout(() => navigate(1), 30000); // max 30s fallback
+
+  } else {
+    textWrap.style.display = 'flex';
+    bgEl.style.background  = '';
+    bgEl.className = 'bg-' + s.bg;
+    textEl.textContent = s.text;
+    timer = setTimeout(() => navigate(1), STORY_DURATION * 1000);
+  }
+}
+
+function getVideoDur() {
+  // will be updated when metadata loads
+  return 15;
+}
+
+videoEl.addEventListener('loadedmetadata', () => {
+  const dur = Math.min(videoEl.duration || 15, 60);
+  const bar = document.getElementById('bar-' + current);
+  if (bar) {
+    bar.style.setProperty('--story-duration', dur + 's');
+    bar.className = 'bar-fill';
+    void bar.offsetWidth;
+    bar.classList.add('active');
+  }
+  clearTimeout(timer);
+  timer = setTimeout(() => navigate(1), dur * 1000);
+});
+
+// ── Navigate ────────────────────────────────────────
+function navigate(dir) {
+  if (!stories.length) return;
+  const next = current + dir;
+
+  if (next < 0) return;            // already at first
+  if (next >= stories.length) return; // already at last
+
+  wrap.classList.remove('slide-left', 'slide-right');
+  void wrap.offsetWidth;
+  wrap.classList.add(dir > 0 ? 'slide-left' : 'slide-right');
+
+  showStory(next);
+  setTimeout(() => wrap.classList.remove('slide-left', 'slide-right'), 250);
+}
+
+// ── Keyboard ────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowUp')   navigate(-1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowDown')  navigate(1);
+});
+
+// ── Touch swipe ─────────────────────────────────────
+let touchX = null;
+wrap.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+wrap.addEventListener('touchend', e => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if (Math.abs(dx) > 50) navigate(dx > 0 ? -1 : 1);
+});
+
+// ── Init ─────────────────────────────────────────────
+fetchStories();
+setInterval(fetchStories, REFRESH_INTERVAL * 1000);
+</script>
+</body>
+</html>
